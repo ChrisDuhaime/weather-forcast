@@ -4,15 +4,64 @@
 let userForm = $('#user-form');
 let searchInput = $('#searchInput');
 let searchButton = $('#searchButton');
+if (localStorage.getItem('recentSearches') === null) {
+  localStorage.setItem('recentSearches', 'Austin,TX');
+}
+
 populateRecentSearches();
+const previousSearchButtons = $('.previous-searches');
+previousSearchButtons.on('click', function (event) {
+  event.preventDefault();
+  document.getElementById('currentForecast').innerHTML = '';
+  document.getElementById('fiveDayForecast').innerHTML = '';
+  let val = $(event.target).text();
+  let valLength = val.length;
+  console.log('AboutToSetLocalStorageFor: ' + val);
+  if (val !== '') {
+    localStorage.setItem('recentSearches', localStorage.getItem('recentSearches') + '|' + val);
+  }
+
+  if ((val.charAt(valLength - 3) !== ',') && (val.charAt(valLength - 4) !== ',')) {
+    alert('Please enter search as City, State Code')
+    searchInput.val('');
+  } else {
+    const apiKey = '7e1a24ad7b21da55ee7e5b079e9bdaca';
+    let baseWeatherURL = 'https://api.openweathermap.org/data/2.5/onecall';
+    let baseGeoURL = 'https://api.openweathermap.org/geo/1.0/direct';
+    let geoEndpoint = baseGeoURL + '?q=' + val + ',US&appid=' + apiKey;
+    console.log('endpoint' + geoEndpoint);
+    fetch(geoEndpoint)
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        let weatherEndpoint = baseWeatherURL + '?lat=' + data[0].lat + '&lon=' + data[0].lon + '&appid=' + apiKey;
+        console.log('WEATHER_EP: ' + weatherEndpoint);
+        return fetch(weatherEndpoint);
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        console.log('DATA: ' + JSON.stringify(data));
+        getTodaysWeather(data.current);
+        getForecast(data.daily);
+      })
+  }
+
+
+})
 searchButton.on('click', function (event) {
   event.preventDefault();
-
-  console.log('function called');
+  document.getElementById('currentForecast').innerHTML = '';
+  document.getElementById('fiveDayForecast').innerHTML = '';
   let val = searchInput.val();
   let valLength = val.length;
   console.log('AboutToSetLocalStorageFor: ' + val);
-  localStorage.setItem('recentSearches', localStorage.getItem('recentSearches') + '|' + val);
+  if (val !== '') {
+    localStorage.setItem('recentSearches', localStorage.getItem('recentSearches') + '|' + val);
+  }
+
   if ((val.charAt(valLength - 3) !== ',') && (val.charAt(valLength - 4) !== ',')) {
     alert('Please enter search as City, State Code')
     searchInput.val('');
@@ -45,28 +94,26 @@ searchButton.on('click', function (event) {
 });
 
 function populateRecentSearches() {
-  console.log('populateRecentSearchesFunctionCalled');
+
   const recentSearches = localStorage.getItem('recentSearches');
   let recentSearchesArr;
-  console.log(typeof recentSearches);
+
   if (recentSearches !== '' && recentSearches !== null && recentSearches !== undefined) {
-    console.log('recentSearchesIsNotNull');
+
     recentSearchesArr = recentSearches.split('|');
   }
 
   if (Array.isArray(recentSearchesArr)) {
-    console.log('isArray');
-    for (let x = 0; x < recentSearchesArr.length; x++) {
-      console.log('Entering loop');
-      // create your LI tags dynamically
-      let currentSearch = recentSearchesArr[x];
+    let uniqueRecentSearchesArr = [...new Set(recentSearchesArr)];
+    uniqueRecentSearchesArr.sort();
+    for (let x = 0; x < uniqueRecentSearchesArr.length; x++) {
+      const recentSearchButton = document.createElement('button');
+      recentSearchButton.innerHTML= uniqueRecentSearchesArr[x];
+      recentSearchButton.setAttribute('class','list-group-item list-group-item-action previous-searches');
       let parentSection = document.getElementById('savedLocations');
-      let ul = document.createElement('ul');
-      ul.setAttribute('class', 'list-group');
-      parentSection.appendChild(ul);
-      let li = document.createElement('li');
-      li.innerHTML = currentSearch;
-      ul.appendChild(li);
+      parentSection.appendChild(recentSearchButton);
+      
+      
 
     }
   }
@@ -83,7 +130,7 @@ function getTodaysWeather(currentData) {
     console.log('Entering loop');
     // create your LI tags dynamically
     let currentCondition = dailyConditions[x];
-    let parentDiv = document.getElementById('currentForcast');
+    let parentDiv = document.getElementById('currentForecast');
     let ul = document.createElement('ul');
     ul.setAttribute('class', 'list-group');
     ul.setAttribute('id', 'dailyConditionsUL');
@@ -100,7 +147,7 @@ function getForecast(forecastData) {
     let currentDay = forecastData[x];
     let d = new Date(0);
     d.setUTCSeconds(currentDay.dt);
-    let noTimeDate = d.getMonth()+1 +'/' + d.getDate() + '/' + d.getFullYear()
+    let noTimeDate = d.getMonth() + 1 + '/' + d.getDate() + '/' + d.getFullYear()
     const tempInt = parseInt(currentDay.temp.day);
     const convertedTemp = (tempInt - 273.15) * 9 / 5 + 32;
     let roundedString = convertedTemp.toFixed(2).toString();
