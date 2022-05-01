@@ -1,0 +1,29 @@
+header {
+    background-color: blue;
+    color: white;
+    text-align: center;
+}
+
+.btn {
+    border-style: solid;
+    border-color: aqua;
+    background-color: darkcyan;
+    font-weight: bolder;
+}
+
+#recentLocations {
+     font-style:italic
+     
+}
+
+/*#forcast {
+    margin-left: 50%;
+    max-width: fit-content;
+    max-height: fit-content;
+}
+
+.searchLocations {
+    width: 50%; 
+    float: left;
+}
+*/
